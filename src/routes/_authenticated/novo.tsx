@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { generateAtestadoPdf, downloadPdf } from "@/lib/atestado-pdf";
 
@@ -19,6 +19,33 @@ function NovoAtestado() {
   const { user, profile } = useAuth();
   const nav = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const [observacao, setObservacao] = useState("");
+  const [dias, setDias] = useState(1);
+
+  async function gerarComIA() {
+    if (!motivo.trim()) {
+      toast.error("Digite um motivo (ex: diarreia, gripe, lombalgia)");
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const res = await fetch("/api/describe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motivo, dias }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro na IA");
+      setObservacao(data.text || "");
+      toast.success("Observação gerada");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   return (
     <div className="space-y-4 max-w-2xl">
@@ -37,9 +64,8 @@ function NovoAtestado() {
             const fd = new FormData(e.currentTarget);
             const nome_paciente = String(fd.get("nome_paciente")).trim();
             const data_atendimento = String(fd.get("data_atendimento"));
-            const dias = Number(fd.get("dias"));
-            const observacao = String(fd.get("observacao") || "").trim() || null;
             const cid = String(fd.get("cid") || "").trim() || null;
+            const obs = observacao.trim() || null;
 
             if (!nome_paciente) return toast.error("Nome obrigatório");
             if (!(dias > 0)) return toast.error("Dias deve ser maior que 0");
@@ -51,7 +77,7 @@ function NovoAtestado() {
                 medico_id: user.id,
                 medico_nome: profile.nome,
                 medico_crm: profile.crm,
-                nome_paciente, data_atendimento, dias, observacao, cid,
+                nome_paciente, data_atendimento, dias, observacao: obs, cid,
               })
               .select("*").single();
             if (error || !data) {
@@ -77,17 +103,54 @@ function NovoAtestado() {
             </div>
             <div className="space-y-2">
               <Label>Dias de afastamento *</Label>
-              <Input name="dias" type="number" min={1} required defaultValue={1} />
+              <Input
+                name="dias"
+                type="number"
+                min={1}
+                required
+                value={dias}
+                onChange={(e) => setDias(Number(e.target.value))}
+              />
             </div>
           </div>
           <div className="space-y-2">
             <Label>CID (opcional)</Label>
             <Input name="cid" placeholder="Ex: J11" />
           </div>
-          <div className="space-y-2">
-            <Label>Observação (opcional)</Label>
-            <Textarea name="observacao" rows={4} />
+
+          <div className="space-y-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+            <Label className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Auto-preencher com IA
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Digite um motivo curto (ex: <em>diarreia</em>, <em>gripe</em>, <em>lombalgia</em>) e a IA escreverá uma observação clínica formal.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Motivo / sintoma"
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                disabled={aiBusy}
+              />
+              <Button type="button" onClick={gerarComIA} disabled={aiBusy}>
+                {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                <span className="ml-1">Gerar</span>
+              </Button>
+            </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>Observação</Label>
+            <Textarea
+              name="observacao"
+              rows={5}
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              placeholder="Texto que aparecerá no atestado. Pode ser editado livremente."
+            />
+          </div>
+
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? "Gerando..." : "Gerar Atestado"}
           </Button>

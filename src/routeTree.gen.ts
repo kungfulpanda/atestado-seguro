@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ValidarIdRouteImport } from './routes/validar.$id'
+import { Route as ApiDescribeRouteImport } from './routes/api/describe'
 import { Route as AuthenticatedNovoRouteImport } from './routes/_authenticated/novo'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 
@@ -35,6 +36,11 @@ const ValidarIdRoute = ValidarIdRouteImport.update({
   path: '/validar/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDescribeRoute = ApiDescribeRouteImport.update({
+  id: '/api/describe',
+  path: '/api/describe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedNovoRoute = AuthenticatedNovoRouteImport.update({
   id: '/novo',
   path: '/novo',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/novo': typeof AuthenticatedNovoRoute
+  '/api/describe': typeof ApiDescribeRoute
   '/validar/$id': typeof ValidarIdRoute
 }
 export interface FileRoutesByTo {
@@ -58,6 +65,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/novo': typeof AuthenticatedNovoRoute
+  '/api/describe': typeof ApiDescribeRoute
   '/validar/$id': typeof ValidarIdRoute
 }
 export interface FileRoutesById {
@@ -67,13 +75,20 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/novo': typeof AuthenticatedNovoRoute
+  '/api/describe': typeof ApiDescribeRoute
   '/validar/$id': typeof ValidarIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard' | '/novo' | '/validar/$id'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/novo'
+    | '/api/describe'
+    | '/validar/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/novo' | '/validar/$id'
+  to: '/' | '/login' | '/dashboard' | '/novo' | '/api/describe' | '/validar/$id'
   id:
     | '__root__'
     | '/'
@@ -81,6 +96,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/dashboard'
     | '/_authenticated/novo'
+    | '/api/describe'
     | '/validar/$id'
   fileRoutesById: FileRoutesById
 }
@@ -88,6 +104,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiDescribeRoute: typeof ApiDescribeRoute
   ValidarIdRoute: typeof ValidarIdRoute
 }
 
@@ -119,6 +136,13 @@ declare module '@tanstack/react-router' {
       path: '/validar/$id'
       fullPath: '/validar/$id'
       preLoaderRoute: typeof ValidarIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/describe': {
+      id: '/api/describe'
+      path: '/api/describe'
+      fullPath: '/api/describe'
+      preLoaderRoute: typeof ApiDescribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/novo': {
@@ -156,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiDescribeRoute: ApiDescribeRoute,
   ValidarIdRoute: ValidarIdRoute,
 }
 export const routeTree = rootRouteImport
