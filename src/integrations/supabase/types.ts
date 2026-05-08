@@ -14,7 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      atestados: {
+        Row: {
+          cid: string | null
+          created_at: string
+          data_atendimento: string
+          dias: number
+          id: string
+          medico_crm: string
+          medico_id: string
+          medico_nome: string
+          nome_paciente: string
+          observacao: string | null
+        }
+        Insert: {
+          cid?: string | null
+          created_at?: string
+          data_atendimento: string
+          dias: number
+          id?: string
+          medico_crm: string
+          medico_id: string
+          medico_nome: string
+          nome_paciente: string
+          observacao?: string | null
+        }
+        Update: {
+          cid?: string | null
+          created_at?: string
+          data_atendimento?: string
+          dias?: number
+          id?: string
+          medico_crm?: string
+          medico_id?: string
+          medico_nome?: string
+          nome_paciente?: string
+          observacao?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          crm: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          crm: string
+          id: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          crm?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
