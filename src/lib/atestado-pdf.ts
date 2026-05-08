@@ -20,7 +20,7 @@ function formatDateBR(iso: string): string {
 export async function generateAtestadoPdf(a: AtestadoData, validateUrl: string): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([595, 842]); // A4
-  const { width, height } = page.size();
+  const { width, height } = page.getSize();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
