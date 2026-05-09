@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Plus, Eye, Download, FileText } from "lucide-react";
 import { generateAtestadoPdf, downloadPdf, openPdf, type AtestadoData } from "@/lib/atestado-pdf";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
