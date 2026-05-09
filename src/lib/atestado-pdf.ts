@@ -60,8 +60,7 @@ function drawHeader(page: PDFPage, a: AtestadoData, s: Style, width: number, hei
   // Logo block (monogram)
   const logoW = 110, logoH = 48;
   page.drawRectangle({ x: margin, y: top - logoH, width: logoW, height: logoH, color: accent });
-  page.drawText("MedAtesta", { x: margin + 10, y: top - 22, size: 16, font: s.bold, color: rgb(1,1,1) });
-  page.drawText("Atestado Eletrônico", { x: margin + 10, y: top - 38, size: 8, font: s.font, color: rgb(0.9,0.95,0.92) });
+  page.drawText("MedAtesta", { x: margin + 10, y: top - 30, size: 18, font: s.bold, color: rgb(1,1,1) });
 
   // Clinic info next to logo
   const clinicX = margin + logoW + 14;
