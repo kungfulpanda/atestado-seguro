@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ValidarIdRouteImport } from './routes/validar.$id'
 import { Route as ApiDescribeRouteImport } from './routes/api/describe'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedNovoRouteImport } from './routes/_authenticated/novo'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 
@@ -41,6 +42,11 @@ const ApiDescribeRoute = ApiDescribeRouteImport.update({
   path: '/api/describe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedNovoRoute = AuthenticatedNovoRouteImport.update({
   id: '/novo',
   path: '/novo',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/novo': typeof AuthenticatedNovoRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/api/describe': typeof ApiDescribeRoute
   '/validar/$id': typeof ValidarIdRoute
 }
@@ -65,6 +72,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/novo': typeof AuthenticatedNovoRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/api/describe': typeof ApiDescribeRoute
   '/validar/$id': typeof ValidarIdRoute
 }
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/novo': typeof AuthenticatedNovoRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/api/describe': typeof ApiDescribeRoute
   '/validar/$id': typeof ValidarIdRoute
 }
@@ -85,10 +94,18 @@ export interface FileRouteTypes {
     | '/login'
     | '/dashboard'
     | '/novo'
+    | '/perfil'
     | '/api/describe'
     | '/validar/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/novo' | '/api/describe' | '/validar/$id'
+  to:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/novo'
+    | '/perfil'
+    | '/api/describe'
+    | '/validar/$id'
   id:
     | '__root__'
     | '/'
@@ -96,6 +113,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/dashboard'
     | '/_authenticated/novo'
+    | '/_authenticated/perfil'
     | '/api/describe'
     | '/validar/$id'
   fileRoutesById: FileRoutesById
@@ -145,6 +163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDescribeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/novo': {
       id: '/_authenticated/novo'
       path: '/novo'
@@ -165,11 +190,13 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedNovoRoute: typeof AuthenticatedNovoRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedNovoRoute: AuthenticatedNovoRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -186,3 +213,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
