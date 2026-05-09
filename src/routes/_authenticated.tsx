@@ -1,7 +1,7 @@
 import { createFileRoute, Navigate, Outlet, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, LogOut } from "lucide-react";
+import { Stethoscope, LogOut, UserCog } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   component: Layout,
