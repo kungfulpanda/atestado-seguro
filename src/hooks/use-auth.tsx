@@ -66,8 +66,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const refreshProfile = async () => {
+    if (!session?.user) return;
+    const { data } = await supabase.from("profiles")
+      .select("nome,crm,especialidade,clinica_nome,clinica_endereco")
+      .eq("id", session.user.id).maybeSingle();
+    setProfile(data ?? null);
+  };
+
   return (
-    <Ctx.Provider value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signOut }}>
+    <Ctx.Provider value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signOut, refreshProfile }}>
       {children}
     </Ctx.Provider>
   );
