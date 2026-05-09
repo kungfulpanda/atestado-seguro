@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       if (s?.user) {
         setTimeout(() => {
-          supabase.from("profiles").select("nome,crm").eq("id", s.user.id).maybeSingle()
+          supabase.from("profiles").select("nome,crm,especialidade,clinica_nome,clinica_endereco").eq("id", s.user.id).maybeSingle()
             .then(({ data }) => setProfile(data ?? null));
         }, 0);
       } else {
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        supabase.from("profiles").select("nome,crm").eq("id", session.user.id).maybeSingle()
+        supabase.from("profiles").select("nome,crm,especialidade,clinica_nome,clinica_endereco").eq("id", session.user.id).maybeSingle()
           .then(({ data }) => setProfile(data ?? null));
       }
       setLoading(false);
