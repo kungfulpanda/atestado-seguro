@@ -220,92 +220,71 @@ export async function generateAtestadoPdf(a: AtestadoData, validateUrl: string):
     }
   }
 
-  // Signature block (centered, lower)
-  const sigY = 230;
-  const sigStartX = (width - 320) / 2;
+  // Signature + QR row (lower part of the page)
+  const sigBaseY = 215;
+  const sigLineW = 280;
+  const sigStartX = margin + 30;
+
+  // Cursive signature image above the line
+  const sigBytes = renderCursiveSignature(a.medico_nome);
+  if (sigBytes) {
+    try {
+      const sigImg = await pdf.embedPng(sigBytes);
+      const sigImgW = 220;
+      const sigImgH = (sigImg.height / sigImg.width) * sigImgW;
+      page.drawImage(sigImg, {
+        x: sigStartX + (sigLineW - sigImgW) / 2,
+        y: sigBaseY + 4,
+        width: sigImgW,
+        height: sigImgH,
+      });
+    } catch { /* ignore */ }
+  }
+
   page.drawLine({
-    start: { x: sigStartX, y: sigY }, end: { x: sigStartX + 320, y: sigY },
+    start: { x: sigStartX, y: sigBaseY }, end: { x: sigStartX + sigLineW, y: sigBaseY },
     thickness: 0.7, color: ink,
   });
   const docName = a.medico_nome.toUpperCase();
   const docW = bold.widthOfTextAtSize(docName, 11);
-  page.drawText(docName, { x: (width - docW) / 2, y: sigY - 14, size: 11, font: bold, color: ink });
+  page.drawText(docName, { x: sigStartX + (sigLineW - docW) / 2, y: sigBaseY - 14, size: 11, font: bold, color: ink });
   const crmStr = `CRM ${a.medico_crm}${a.medico_especialidade ? " — " + a.medico_especialidade : ""}`;
   const crmW = font.widthOfTextAtSize(crmStr, 10);
-  page.drawText(crmStr, { x: (width - crmW) / 2, y: sigY - 28, size: 10, font, color: muted });
-  const carimbo = "Assinatura e Carimbo";
-  const cW = font.widthOfTextAtSize(carimbo, 10);
-  page.drawText(carimbo, { x: (width - cW) / 2, y: sigY - 46, size: 10, font: italic, color: muted });
+  page.drawText(crmStr, { x: sigStartX + (sigLineW - crmW) / 2, y: sigBaseY - 28, size: 10, font, color: muted });
+  const carimbo = "Assinatura do Médico";
+  const cW = font.widthOfTextAtSize(carimbo, 9);
+  page.drawText(carimbo, { x: sigStartX + (sigLineW - cW) / 2, y: sigBaseY - 42, size: 9, font: italic, color: muted });
+
+  // QR panel on the right of the signature
+  const qrSize = 110;
+  const qrX = width - margin - qrSize - 6;
+  const qrY = sigBaseY - 30;
+  page.drawRectangle({
+    x: qrX - 10, y: qrY - 28, width: qrSize + 20, height: qrSize + 48,
+    borderColor: lineCol, borderWidth: 0.6, color: rgb(1, 1, 1),
+  });
+  const qrDataUrl = await QRCode.toDataURL(validateUrl, { margin: 0, width: 320 });
+  const qrPng = await pdf.embedPng(qrDataUrl);
+  page.drawImage(qrPng, { x: qrX, y: qrY, width: qrSize, height: qrSize });
+  const qrLabel = "Verificar autenticidade";
+  const qrLW = bold.widthOfTextAtSize(qrLabel, 8.5);
+  page.drawText(qrLabel, { x: qrX + (qrSize - qrLW) / 2, y: qrY + qrSize + 8, size: 8.5, font: bold, color: accent });
+  const codigo = `Código: ${a.id.slice(0, 8).toUpperCase()}`;
+  const codW = font.widthOfTextAtSize(codigo, 8);
+  page.drawText(codigo, { x: qrX + (qrSize - codW) / 2, y: qrY - 14, size: 8, font, color: muted });
 
   // Footer
   page.drawLine({
     start: { x: margin, y: 70 }, end: { x: width - margin, y: 70 },
     thickness: 0.5, color: lineCol,
   });
-  page.drawText(`Documento eletrônico gerado em ${new Date().toLocaleString("pt-BR")}`, {
-    x: margin, y: 56, size: 8, font, color: muted,
-  });
-  page.drawText(`ID: ${a.id}`, { x: margin, y: 44, size: 8, font, color: muted });
-  const pgNum = "Página 1 de 2";
-  page.drawText(pgNum, { x: width - margin - font.widthOfTextAtSize(pgNum, 8), y: 44, size: 8, font, color: muted });
-
-  // ============ Page 2 (validation) ============
-  const p2 = pdf.addPage([595, 842]);
-  drawHeader(p2, a, s, width, height, margin);
-  let y2 = height - margin - 130;
-  const t2 = "Validação do Documento";
-  const t2W = bold.widthOfTextAtSize(t2, 18);
-  p2.drawText(t2, { x: (width - t2W) / 2, y: y2, size: 18, font: bold, color: ink });
-  y2 -= 28;
-  const intro = "A validação do documento poderá ser realizada através do QR Code ou do link abaixo.";
-  for (const ln of wrap(intro, font, 11, width - margin * 2)) {
-    const w = font.widthOfTextAtSize(ln, 11);
-    p2.drawText(ln, { x: (width - w) / 2, y: y2, size: 11, font, color: ink });
-    y2 -= 16;
+  const legal = "Documento médico assinado e armazenado em sistema seguro. A autenticidade pode ser verificada pelo QR Code acima.";
+  let yL = 56;
+  for (const ln of wrap(legal, italic, 8, width - margin * 2)) {
+    page.drawText(ln, { x: margin, y: yL, size: 8, font: italic, color: muted });
+    yL -= 10;
   }
-  y2 -= 20;
-
-  // QR
-  const qrSize = 200;
-  const qrX = (width - qrSize) / 2;
-  const qrY = y2 - qrSize;
-  p2.drawRectangle({
-    x: qrX - 14, y: qrY - 14, width: qrSize + 28, height: qrSize + 28,
-    borderColor: lineCol, borderWidth: 0.6, color: rgb(1, 1, 1),
-  });
-  const qrDataUrl = await QRCode.toDataURL(validateUrl, { margin: 0, width: 480 });
-  const qrPng = await pdf.embedPng(qrDataUrl);
-  p2.drawImage(qrPng, { x: qrX, y: qrY, width: qrSize, height: qrSize });
-
-  let y3 = qrY - 36;
-  const apt = "Aponte a câmera do celular ou leitor de QR Code, ou visite:";
-  const aptW = font.widthOfTextAtSize(apt, 10);
-  p2.drawText(apt, { x: (width - aptW) / 2, y: y3, size: 10, font, color: muted });
-  y3 -= 14;
-  const linkW = bold.widthOfTextAtSize(validateUrl, 10);
-  p2.drawText(validateUrl, { x: (width - linkW) / 2, y: y3, size: 10, font: bold, color: accent });
-  y3 -= 22;
-  const codigo = `CÓDIGO: ${a.id.slice(0, 8).toUpperCase()}`;
-  const codW = bold.widthOfTextAtSize(codigo, 11);
-  p2.drawText(codigo, { x: (width - codW) / 2, y: y3, size: 11, font: bold, color: ink });
-
-  // Legal text
-  const legal = "Documento assinado eletronicamente. A autenticidade pode ser verificada pelo QR Code ou pelo link acima. Este atestado não pode ser alterado após a emissão e fica armazenado em sistema seguro de registro médico eletrônico, em conformidade com as resoluções do Conselho Federal de Medicina e a legislação aplicável.";
-  let yL = 170;
-  p2.drawLine({ start: { x: margin, y: yL + 20 }, end: { x: width - margin, y: yL + 20 }, thickness: 0.5, color: lineCol });
-  for (const ln of wrap(legal, italic, 9, width - margin * 2)) {
-    p2.drawText(ln, { x: margin, y: yL, size: 9, font: italic, color: muted });
-    yL -= 12;
-  }
-
-  // Footer
-  p2.drawLine({ start: { x: margin, y: 70 }, end: { x: width - margin, y: 70 }, thickness: 0.5, color: lineCol });
-  p2.drawText(`ID: ${a.id}`, { x: margin, y: 56, size: 8, font, color: muted });
-  p2.drawText(`CONFIDENCIAL — uso restrito do paciente e empregador`, {
-    x: margin, y: 44, size: 8, font: italic, color: muted,
-  });
-  const pn2 = "Página 2 de 2";
-  p2.drawText(pn2, { x: width - margin - font.widthOfTextAtSize(pn2, 8), y: 44, size: 8, font, color: muted });
+  page.drawText(`ID: ${a.id}`, { x: margin, y: 30, size: 7.5, font, color: muted });
 
   return await pdf.save();
 }
