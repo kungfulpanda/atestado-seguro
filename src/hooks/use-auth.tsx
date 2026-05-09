@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type Profile = { nome: string; crm: string };
+type Profile = { nome: string; crm: string; especialidade?: string | null; clinica_nome?: string | null; clinica_endereco?: string | null };
 
 interface AuthCtx {
   session: Session | null;
