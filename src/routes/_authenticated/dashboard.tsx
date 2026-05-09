@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Eye, Download, FileText } from "lucide-react";
+import { Plus, Eye, Download, FileText, UserCog, AlertCircle } from "lucide-react";
 import { generateAtestadoPdf, downloadPdf, openPdf, type AtestadoData } from "@/lib/atestado-pdf";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
