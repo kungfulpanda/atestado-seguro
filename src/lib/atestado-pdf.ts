@@ -30,6 +30,39 @@ function diasPorExtenso(n: number): string {
 
 function pad2(n: number) { return n.toString().padStart(2, "0"); }
 
+function renderCursiveSignature(name: string): Uint8Array | null {
+  if (typeof document === "undefined") return null;
+  const w = 700, h = 200;
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#0a1a3a";
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  // Pick a cursive font available on most systems
+  ctx.font = 'italic 78px "Brush Script MT","Lucida Handwriting","Segoe Script","Comic Sans MS",cursive';
+  // Slight rotation for handwriting feel
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate(-0.04);
+  ctx.fillText(name, 0, 0);
+  // Underline flourish
+  ctx.strokeStyle = "#0a1a3a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const tw = ctx.measureText(name).width;
+  ctx.moveTo(-tw / 2 - 10, 50);
+  ctx.bezierCurveTo(-tw / 4, 70, tw / 4, 30, tw / 2 + 20, 55);
+  ctx.stroke();
+  const dataUrl = canvas.toDataURL("image/png");
+  const b64 = dataUrl.split(",")[1];
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
 function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const out: string[] = [];
   for (const para of text.split(/\n/)) {
