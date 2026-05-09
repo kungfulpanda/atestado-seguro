@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Eye, Download, FileText } from "lucide-react";
+import { Plus, Eye, Download, FileText, UserCog, AlertCircle } from "lucide-react";
 import { generateAtestadoPdf, downloadPdf, openPdf, type AtestadoData } from "@/lib/atestado-pdf";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -38,15 +38,35 @@ function Dashboard() {
     else downloadPdf(bytes, `atestado-${a.nome_paciente.replace(/\s+/g, "_")}.pdf`);
   }
 
+  const perfilIncompleto = !profile?.clinica_nome || !profile?.especialidade;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Atestados</h1>
           <p className="text-sm text-muted-foreground">Gerencie e emita atestados médicos</p>
         </div>
-        <Link to="/novo"><Button><Plus className="h-4 w-4 mr-1" /> Novo Atestado</Button></Link>
+        <div className="flex gap-2">
+          <Link to="/perfil">
+            <Button variant="outline"><UserCog className="h-4 w-4 mr-1" /> Médico & Clínica</Button>
+          </Link>
+          <Link to="/novo"><Button><Plus className="h-4 w-4 mr-1" /> Novo Atestado</Button></Link>
+        </div>
       </div>
+
+      {perfilIncompleto && (
+        <Card className="p-4 flex items-start gap-3 border-primary/40 bg-primary/5">
+          <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-medium">Complete seus dados profissionais</p>
+            <p className="text-sm text-muted-foreground">
+              Preencha nome, CRM, especialidade e dados da clínica para que apareçam corretamente no atestado.
+            </p>
+          </div>
+          <Link to="/perfil"><Button size="sm">Editar dados</Button></Link>
+        </Card>
+      )}
 
       {rows === null ? (
         <p className="text-muted-foreground">Carregando...</p>
