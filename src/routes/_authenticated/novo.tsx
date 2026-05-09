@@ -86,7 +86,12 @@ function NovoAtestado() {
               return;
             }
             const url = `${window.location.origin}/validar/${data.id}`;
-            const bytes = await generateAtestadoPdf(data, url);
+            const bytes = await generateAtestadoPdf({
+              ...data,
+              medico_especialidade: profile.especialidade ?? null,
+              clinica_nome: profile.clinica_nome ?? null,
+              clinica_endereco: profile.clinica_endereco ?? null,
+            }, url);
             downloadPdf(bytes, `atestado-${nome_paciente.replace(/\s+/g, "_")}.pdf`);
             toast.success("Atestado gerado!");
             nav({ to: "/dashboard" });

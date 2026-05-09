@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type Profile = { nome: string; crm: string };
+type Profile = { nome: string; crm: string; especialidade?: string | null; clinica_nome?: string | null; clinica_endereco?: string | null };
 
 interface AuthCtx {
   session: Session | null;
@@ -12,6 +12,7 @@ interface AuthCtx {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, nome: string, crm: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -26,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       if (s?.user) {
         setTimeout(() => {
-          supabase.from("profiles").select("nome,crm").eq("id", s.user.id).maybeSingle()
+          supabase.from("profiles").select("nome,crm,especialidade,clinica_nome,clinica_endereco").eq("id", s.user.id).maybeSingle()
             .then(({ data }) => setProfile(data ?? null));
         }, 0);
       } else {
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        supabase.from("profiles").select("nome,crm").eq("id", session.user.id).maybeSingle()
+        supabase.from("profiles").select("nome,crm,especialidade,clinica_nome,clinica_endereco").eq("id", session.user.id).maybeSingle()
           .then(({ data }) => setProfile(data ?? null));
       }
       setLoading(false);
@@ -65,8 +66,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const refreshProfile = async () => {
+    if (!session?.user) return;
+    const { data } = await supabase.from("profiles")
+      .select("nome,crm,especialidade,clinica_nome,clinica_endereco")
+      .eq("id", session.user.id).maybeSingle();
+    setProfile(data ?? null);
+  };
+
   return (
-    <Ctx.Provider value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signOut }}>
+    <Ctx.Provider value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signOut, refreshProfile }}>
       {children}
     </Ctx.Provider>
   );

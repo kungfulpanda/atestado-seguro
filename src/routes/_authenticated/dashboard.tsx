@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Plus, Eye, Download, FileText } from "lucide-react";
 import { generateAtestadoPdf, downloadPdf, openPdf, type AtestadoData } from "@/lib/atestado-pdf";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 type Row = AtestadoData & { created_at: string };
 
 function Dashboard() {
+  const { profile } = useAuth();
   const [rows, setRows] = useState<Row[] | null>(null);
 
   useEffect(() => {
@@ -26,7 +28,12 @@ function Dashboard() {
 
   async function handle(a: Row, action: "view" | "download") {
     const url = `${window.location.origin}/validar/${a.id}`;
-    const bytes = await generateAtestadoPdf(a, url);
+    const bytes = await generateAtestadoPdf({
+      ...a,
+      medico_especialidade: profile?.especialidade ?? null,
+      clinica_nome: profile?.clinica_nome ?? null,
+      clinica_endereco: profile?.clinica_endereco ?? null,
+    }, url);
     if (action === "view") openPdf(bytes);
     else downloadPdf(bytes, `atestado-${a.nome_paciente.replace(/\s+/g, "_")}.pdf`);
   }

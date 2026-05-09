@@ -55,20 +55,29 @@ export type Database = {
       }
       profiles: {
         Row: {
+          clinica_endereco: string | null
+          clinica_nome: string | null
           created_at: string
           crm: string
+          especialidade: string | null
           id: string
           nome: string
         }
         Insert: {
+          clinica_endereco?: string | null
+          clinica_nome?: string | null
           created_at?: string
           crm: string
+          especialidade?: string | null
           id: string
           nome: string
         }
         Update: {
+          clinica_endereco?: string | null
+          clinica_nome?: string | null
           created_at?: string
           crm?: string
+          especialidade?: string | null
           id?: string
           nome?: string
         }
