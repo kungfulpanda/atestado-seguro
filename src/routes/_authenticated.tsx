@@ -23,8 +23,13 @@ function Layout() {
             </div>
             MedAtesta
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {profile && <span className="text-sm text-muted-foreground hidden sm:inline">Dr(a). {profile.nome}</span>}
+            <Link to="/perfil">
+              <Button variant="ghost" size="sm">
+                <UserCog className="h-4 w-4 mr-1" /> Perfil
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="sm"
