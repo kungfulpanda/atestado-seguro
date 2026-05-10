@@ -86,6 +86,29 @@ function PerfilPage() {
         <p className="text-sm text-muted-foreground mb-6">
           Estas informações aparecerão no cabeçalho e na assinatura dos atestados.
         </p>
+
+        <div className="space-y-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4 mb-4">
+          <Label className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Preencher automaticamente com IA
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Gere dados fictícios de médico e clínica. Você pode dar uma dica (ex: <em>cardiologista em SP</em>) ou deixar em branco.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Dica opcional (especialidade, cidade...)"
+              value={hint}
+              onChange={(e) => setHint(e.target.value)}
+              disabled={aiBusy}
+            />
+            <Button type="button" onClick={gerarComIA} disabled={aiBusy}>
+              {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              <span className="ml-1">Gerar</span>
+            </Button>
+          </div>
+        </div>
+
         <form className="space-y-4" onSubmit={salvar}>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
