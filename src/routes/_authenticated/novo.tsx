@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Sparkles, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { generateAtestadoPdf, downloadPdf } from "@/lib/atestado-pdf";
+import { generateAtestadoPdf, downloadPdf, openPdf } from "@/lib/atestado-pdf";
 
 export const Route = createFileRoute("/_authenticated/novo")({
   component: NovoAtestado,
@@ -23,6 +24,31 @@ function NovoAtestado() {
   const [motivo, setMotivo] = useState("");
   const [observacao, setObservacao] = useState("");
   const [dias, setDias] = useState(1);
+  const [nomePaciente, setNomePaciente] = useState("");
+  const [dataAtendimento, setDataAtendimento] = useState(new Date().toISOString().slice(0, 10));
+  const [cid, setCid] = useState("");
+  const [omitirCrm, setOmitirCrm] = useState(false);
+
+  async function preview() {
+    if (!profile) return toast.error("Perfil não carregado");
+    if (!nomePaciente.trim()) return toast.error("Informe o nome do paciente");
+    const fakeId = "preview-" + Math.random().toString(36).slice(2, 10);
+    const bytes = await generateAtestadoPdf({
+      id: fakeId,
+      nome_paciente: nomePaciente,
+      data_atendimento: dataAtendimento,
+      dias,
+      observacao: observacao.trim() || null,
+      cid: cid.trim() || null,
+      medico_nome: profile.nome,
+      medico_crm: profile.crm,
+      medico_especialidade: profile.especialidade ?? null,
+      clinica_nome: profile.clinica_nome ?? null,
+      clinica_endereco: profile.clinica_endereco ?? null,
+      omitir_crm: omitirCrm,
+    }, `${window.location.origin}/validar/${fakeId}`);
+    openPdf(bytes);
+  }
 
   async function gerarComIA() {
     if (!motivo.trim()) {
@@ -61,11 +87,9 @@ function NovoAtestado() {
           onSubmit={async (e) => {
             e.preventDefault();
             if (!user || !profile) { toast.error("Perfil não carregado"); return; }
-            const fd = new FormData(e.currentTarget);
-            const nome_paciente = String(fd.get("nome_paciente")).trim();
-            const data_atendimento = String(fd.get("data_atendimento"));
-            const cid = String(fd.get("cid") || "").trim() || null;
+            const nome_paciente = nomePaciente.trim();
             const obs = observacao.trim() || null;
+            const cidVal = cid.trim() || null;
 
             if (!nome_paciente) return toast.error("Nome obrigatório");
             if (!(dias > 0)) return toast.error("Dias deve ser maior que 0");
@@ -77,7 +101,7 @@ function NovoAtestado() {
                 medico_id: user.id,
                 medico_nome: profile.nome,
                 medico_crm: profile.crm,
-                nome_paciente, data_atendimento, dias, observacao: obs, cid,
+                nome_paciente, data_atendimento: dataAtendimento, dias, observacao: obs, cid: cidVal,
               })
               .select("*").single();
             if (error || !data) {
@@ -91,6 +115,7 @@ function NovoAtestado() {
               medico_especialidade: profile.especialidade ?? null,
               clinica_nome: profile.clinica_nome ?? null,
               clinica_endereco: profile.clinica_endereco ?? null,
+              omitir_crm: omitirCrm,
             }, url);
             downloadPdf(bytes, `atestado-${nome_paciente.replace(/\s+/g, "_")}.pdf`);
             toast.success("Atestado gerado!");
@@ -99,17 +124,16 @@ function NovoAtestado() {
         >
           <div className="space-y-2">
             <Label>Nome do paciente *</Label>
-            <Input name="nome_paciente" required />
+            <Input value={nomePaciente} onChange={(e) => setNomePaciente(e.target.value)} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Data do atendimento *</Label>
-              <Input name="data_atendimento" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} />
+              <Input type="date" required value={dataAtendimento} onChange={(e) => setDataAtendimento(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Dias de afastamento *</Label>
               <Input
-                name="dias"
                 type="number"
                 min={1}
                 required
@@ -120,7 +144,15 @@ function NovoAtestado() {
           </div>
           <div className="space-y-2">
             <Label>CID (opcional)</Label>
-            <Input name="cid" placeholder="Ex: J11" />
+            <Input value={cid} onChange={(e) => setCid(e.target.value)} placeholder="Ex: J11" />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label className="text-sm">Omitir CRM no PDF</Label>
+              <p className="text-xs text-muted-foreground">Quando ativo, o CRM não aparece abaixo da assinatura.</p>
+            </div>
+            <Switch checked={omitirCrm} onCheckedChange={setOmitirCrm} />
           </div>
 
           <div className="space-y-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
@@ -148,7 +180,6 @@ function NovoAtestado() {
           <div className="space-y-2">
             <Label>Observação</Label>
             <Textarea
-              name="observacao"
               rows={5}
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
@@ -156,9 +187,14 @@ function NovoAtestado() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "Gerando..." : "Gerar Atestado"}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" className="flex-1" onClick={preview}>
+              <Eye className="h-4 w-4 mr-1" /> Pré-visualizar
+            </Button>
+            <Button type="submit" className="flex-1" disabled={busy}>
+              {busy ? "Gerando..." : "Gerar Atestado"}
+            </Button>
+          </div>
         </form>
       </Card>
     </div>

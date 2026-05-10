@@ -13,6 +13,7 @@ export interface AtestadoData {
   medico_especialidade?: string | null;
   clinica_nome?: string | null;
   clinica_endereco?: string | null;
+  omitir_crm?: boolean;
 }
 
 function formatDateBR(iso: string): string {
@@ -248,9 +249,14 @@ export async function generateAtestadoPdf(a: AtestadoData, validateUrl: string):
   const docName = a.medico_nome.toUpperCase();
   const docW = bold.widthOfTextAtSize(docName, 11);
   page.drawText(docName, { x: sigStartX + (sigLineW - docW) / 2, y: sigBaseY - 14, size: 11, font: bold, color: ink });
-  const crmStr = `CRM ${a.medico_crm}${a.medico_especialidade ? " — " + a.medico_especialidade : ""}`;
-  const crmW = font.widthOfTextAtSize(crmStr, 10);
-  page.drawText(crmStr, { x: sigStartX + (sigLineW - crmW) / 2, y: sigBaseY - 28, size: 10, font, color: muted });
+  if (!a.omitir_crm) {
+    const crmStr = `CRM ${a.medico_crm}${a.medico_especialidade ? " — " + a.medico_especialidade : ""}`;
+    const crmW = font.widthOfTextAtSize(crmStr, 10);
+    page.drawText(crmStr, { x: sigStartX + (sigLineW - crmW) / 2, y: sigBaseY - 28, size: 10, font, color: muted });
+  } else if (a.medico_especialidade) {
+    const espW = font.widthOfTextAtSize(a.medico_especialidade, 10);
+    page.drawText(a.medico_especialidade, { x: sigStartX + (sigLineW - espW) / 2, y: sigBaseY - 28, size: 10, font, color: muted });
+  }
   const carimbo = "Assinatura do Médico";
   const cW = font.widthOfTextAtSize(carimbo, 9);
   page.drawText(carimbo, { x: sigStartX + (sigLineW - cW) / 2, y: sigBaseY - 42, size: 9, font: italic, color: muted });
