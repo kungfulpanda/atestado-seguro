@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Sparkles, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { generateAtestadoPdf, downloadPdf } from "@/lib/atestado-pdf";
+import { generateAtestadoPdf, downloadPdf, openPdf } from "@/lib/atestado-pdf";
 
 export const Route = createFileRoute("/_authenticated/novo")({
   component: NovoAtestado,
