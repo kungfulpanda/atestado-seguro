@@ -13,6 +13,7 @@ export interface AtestadoData {
   medico_especialidade?: string | null;
   clinica_nome?: string | null;
   clinica_endereco?: string | null;
+  omitir_crm?: boolean;
 }
 
 function formatDateBR(iso: string): string {
