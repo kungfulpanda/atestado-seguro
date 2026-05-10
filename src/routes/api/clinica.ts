@@ -12,18 +12,20 @@ export const Route = createFileRoute("/api/clinica")({
             return new Response(JSON.stringify({ error: "AI gateway não configurado" }), { status: 500 });
           }
 
-          const system = `Você gera dados FICTÍCIOS e plausíveis de um(a) médico(a) brasileiro(a) e sua clínica para preencher um formulário de demonstração.
-Regras:
-- Responda APENAS com JSON válido, sem markdown, sem comentários.
-- Campos: nome, crm, especialidade, clinica_nome, clinica_endereco.
-- nome: nome completo brasileiro realista, com prefixo "Dr." ou "Dra.".
-- crm: formato "CRM-UF NNNNN" (ex: "CRM-SP 123456"). UF brasileira válida.
-- especialidade: especialidade médica reconhecida (ex: "Clínica Geral", "Cardiologia", "Pediatria").
-- clinica_nome: nome plausível de clínica/consultório.
-- clinica_endereco: endereço brasileiro completo (rua, número, bairro, cidade - UF, CEP).
-- Use a dica do usuário se fornecida para enviesar especialidade/cidade/estilo.`;
+          const system = `Você é um assistente que preenche um formulário com dados de um(a) médico(a) brasileiro(a) REAL e publicamente conhecido(a) — alguém cujo nome e CRM já apareceram em fontes públicas verificáveis (site do CFM/CRM estadual, imprensa, artigos científicos, sites institucionais de hospitais/universidades, currículo Lattes).
 
-          const userMsg = `Dica (opcional): ${hint?.trim() || "nenhuma"}\nGere o JSON.`;
+REGRAS IMPORTANTES:
+- Use APENAS profissionais cujos dados são públicos e divulgados pelo próprio profissional ou instituição (ex: professores universitários, médicos com presença na mídia, autores de publicações, médicos com perfil institucional público).
+- NÃO invente nem aproxime números de CRM. Se não tiver certeza absoluta de um CRM real, escolha outro profissional que você conheça com certeza.
+- O nome deve ser o nome completo real (com "Dr." ou "Dra.").
+- O CRM deve estar no formato "CRM-UF NNNNN" e corresponder ao profissional.
+- A especialidade deve ser a real do profissional.
+- clinica_nome e clinica_endereco podem ser do hospital/universidade/clínica pública onde atua. Se não souber endereço completo, use o endereço público da instituição.
+- Use a dica para escolher um profissional adequado (especialidade/cidade).
+- Responda APENAS com JSON válido (sem markdown).
+- Campos: nome, crm, especialidade, clinica_nome, clinica_endereco.`;
+
+          const userMsg = `Dica (opcional): ${hint?.trim() || "nenhuma"}\nRetorne os dados reais em JSON.`;
 
           const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
