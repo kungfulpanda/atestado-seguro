@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
@@ -22,6 +22,31 @@ function PerfilPage() {
   const [clinicaNome, setClinicaNome] = useState("");
   const [clinicaEndereco, setClinicaEndereco] = useState("");
   const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [hint, setHint] = useState("");
+
+  async function gerarComIA() {
+    setAiBusy(true);
+    try {
+      const res = await fetch("/api/clinica", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hint }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro na IA");
+      if (data.nome) setNome(data.nome);
+      if (data.crm) setCrm(data.crm);
+      if (data.especialidade) setEspecialidade(data.especialidade);
+      if (data.clinica_nome) setClinicaNome(data.clinica_nome);
+      if (data.clinica_endereco) setClinicaEndereco(data.clinica_endereco);
+      toast.success("Dados gerados — revise antes de salvar");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (profile) {
@@ -61,6 +86,29 @@ function PerfilPage() {
         <p className="text-sm text-muted-foreground mb-6">
           Estas informações aparecerão no cabeçalho e na assinatura dos atestados.
         </p>
+
+        <div className="space-y-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4 mb-4">
+          <Label className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Preencher automaticamente com IA
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Gere dados fictícios de médico e clínica. Você pode dar uma dica (ex: <em>cardiologista em SP</em>) ou deixar em branco.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Dica opcional (especialidade, cidade...)"
+              value={hint}
+              onChange={(e) => setHint(e.target.value)}
+              disabled={aiBusy}
+            />
+            <Button type="button" onClick={gerarComIA} disabled={aiBusy}>
+              {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              <span className="ml-1">Gerar</span>
+            </Button>
+          </div>
+        </div>
+
         <form className="space-y-4" onSubmit={salvar}>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
