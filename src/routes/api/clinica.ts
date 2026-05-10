@@ -35,7 +35,7 @@ REGRAS IMPORTANTES:
               "X-Lovable-AIG-SDK": "vercel-ai-sdk",
             },
             body: JSON.stringify({
-              model: "google/gemini-3-flash-preview",
+              model: "google/gemini-2.5-pro",
               messages: [
                 { role: "system", content: system },
                 { role: "user", content: userMsg },
