@@ -22,6 +22,31 @@ function PerfilPage() {
   const [clinicaNome, setClinicaNome] = useState("");
   const [clinicaEndereco, setClinicaEndereco] = useState("");
   const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [hint, setHint] = useState("");
+
+  async function gerarComIA() {
+    setAiBusy(true);
+    try {
+      const res = await fetch("/api/clinica", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hint }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro na IA");
+      if (data.nome) setNome(data.nome);
+      if (data.crm) setCrm(data.crm);
+      if (data.especialidade) setEspecialidade(data.especialidade);
+      if (data.clinica_nome) setClinicaNome(data.clinica_nome);
+      if (data.clinica_endereco) setClinicaEndereco(data.clinica_endereco);
+      toast.success("Dados gerados — revise antes de salvar");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (profile) {
