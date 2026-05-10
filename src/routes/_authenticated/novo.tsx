@@ -24,6 +24,31 @@ function NovoAtestado() {
   const [motivo, setMotivo] = useState("");
   const [observacao, setObservacao] = useState("");
   const [dias, setDias] = useState(1);
+  const [nomePaciente, setNomePaciente] = useState("");
+  const [dataAtendimento, setDataAtendimento] = useState(new Date().toISOString().slice(0, 10));
+  const [cid, setCid] = useState("");
+  const [omitirCrm, setOmitirCrm] = useState(false);
+
+  async function preview() {
+    if (!profile) return toast.error("Perfil não carregado");
+    if (!nomePaciente.trim()) return toast.error("Informe o nome do paciente");
+    const fakeId = "preview-" + Math.random().toString(36).slice(2, 10);
+    const bytes = await generateAtestadoPdf({
+      id: fakeId,
+      nome_paciente: nomePaciente,
+      data_atendimento: dataAtendimento,
+      dias,
+      observacao: observacao.trim() || null,
+      cid: cid.trim() || null,
+      medico_nome: profile.nome,
+      medico_crm: profile.crm,
+      medico_especialidade: profile.especialidade ?? null,
+      clinica_nome: profile.clinica_nome ?? null,
+      clinica_endereco: profile.clinica_endereco ?? null,
+      omitir_crm: omitirCrm,
+    }, `${window.location.origin}/validar/${fakeId}`);
+    openPdf(bytes);
+  }
 
   async function gerarComIA() {
     if (!motivo.trim()) {
