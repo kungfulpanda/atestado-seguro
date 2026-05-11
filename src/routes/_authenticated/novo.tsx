@@ -10,7 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Sparkles, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { generateAtestadoPdf, downloadPdf, openPdf } from "@/lib/atestado-pdf";
+import { generateAtestadoPdf, downloadPdf, openPdf, type AtestadoTemplate } from "@/lib/atestado-pdf";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/novo")({
   component: NovoAtestado,
@@ -28,6 +29,7 @@ function NovoAtestado() {
   const [dataAtendimento, setDataAtendimento] = useState(new Date().toISOString().slice(0, 10));
   const [cid, setCid] = useState("");
   const [omitirCrm, setOmitirCrm] = useState(false);
+  const [template, setTemplate] = useState<AtestadoTemplate>("amorsaude");
 
   async function preview() {
     if (!profile) return toast.error("Perfil não carregado");
@@ -46,6 +48,7 @@ function NovoAtestado() {
       clinica_nome: profile.clinica_nome ?? null,
       clinica_endereco: profile.clinica_endereco ?? null,
       omitir_crm: omitirCrm,
+      template,
     }, `${window.location.origin}/validar/${fakeId}`);
     openPdf(bytes);
   }
@@ -116,6 +119,7 @@ function NovoAtestado() {
               clinica_nome: profile.clinica_nome ?? null,
               clinica_endereco: profile.clinica_endereco ?? null,
               omitir_crm: omitirCrm,
+              template,
             }, url);
             downloadPdf(bytes, `atestado-${nome_paciente.replace(/\s+/g, "_")}.pdf`);
             toast.success("Atestado gerado!");
@@ -145,6 +149,18 @@ function NovoAtestado() {
           <div className="space-y-2">
             <Label>CID (opcional)</Label>
             <Input value={cid} onChange={(e) => setCid(e.target.value)} placeholder="Ex: J11" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Modelo do atestado</Label>
+            <Select value={template} onValueChange={(v) => setTemplate(v as AtestadoTemplate)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="amorsaude">AmorSaúde (clínica privada)</SelectItem>
+                <SelectItem value="unimed">Unimed (convênio)</SelectItem>
+                <SelectItem value="upa">UPA / SUS (público)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex items-center justify-between rounded-lg border p-3">
