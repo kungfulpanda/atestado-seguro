@@ -187,6 +187,11 @@ async function renderAmorSaude(pdf: PDFDocument, a: AtestadoData, validateUrl: s
   const cidadeStr = `${extractCity(a)}, ${formatDateBR(a.data_atendimento)}`;
   page.drawText(cidadeStr, { x: rightX, y: 320, size: 12, font: bold, color: ink });
 
+  // Especialidade (small, under city)
+  if (a.medico_especialidade) {
+    page.drawText(`Especialidade: ${a.medico_especialidade}`, { x: rightX, y: 304, size: 10, font, color: muted });
+  }
+
   // Signature
   const sigW = 280;
   const sigX = margin + 30;
