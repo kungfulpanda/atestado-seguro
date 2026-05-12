@@ -336,9 +336,14 @@ async function renderUnimed(pdf: PDFDocument, a: AtestadoData, validateUrl: stri
     const cw = font.widthOfTextAtSize(crm, 9.5);
     page.drawText(crm, { x: sigX + (sigW - cw) / 2, y: sigY - 26, size: 9.5, font, color: muted });
   }
+  if (a.medico_especialidade) {
+    const esp = a.medico_especialidade;
+    const ew = font.widthOfTextAtSize(esp, 9.5);
+    page.drawText(esp, { x: sigX + (sigW - ew) / 2, y: sigY - 38, size: 9.5, font: italic, color: muted });
+  }
   const carimbo = "Assinatura e Carimbo";
   const cw2 = font.widthOfTextAtSize(carimbo, 10);
-  page.drawText(carimbo, { x: sigX + (sigW - cw2) / 2, y: sigY - 42, size: 10, font: italic, color: muted });
+  page.drawText(carimbo, { x: sigX + (sigW - cw2) / 2, y: sigY - 54, size: 10, font: italic, color: muted });
 
   // QR + footer block
   await drawQR(pdf, page, validateUrl, width - margin - 80, 90, 70, muted);
