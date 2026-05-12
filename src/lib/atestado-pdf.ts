@@ -630,10 +630,16 @@ async function renderUpaSP(pdf: PDFDocument, a: AtestadoData, validateUrl: strin
   // QR small
   await drawQR(pdf, page, validateUrl, width - margin - 60, 90, 55, muted);
 
-  // Address centered at bottom
+  // Clinic name + address centered at bottom
+  let footY = 52;
   if (a.clinica_endereco) {
     const aw = font.widthOfTextAtSize(a.clinica_endereco, 10);
-    page.drawText(a.clinica_endereco, { x: (width - aw) / 2, y: 40, size: 10, font, color: ink });
+    page.drawText(a.clinica_endereco, { x: (width - aw) / 2, y: footY, size: 10, font, color: ink });
+    footY += 12;
+  }
+  if (a.clinica_nome) {
+    const nw = bold.widthOfTextAtSize(a.clinica_nome, 10);
+    page.drawText(a.clinica_nome, { x: (width - nw) / 2, y: footY, size: 10, font: bold, color: ink });
   }
   page.drawText(`ID: ${a.id}`, { x: margin, y: 22, size: 7, font: italic, color: muted });
 }
