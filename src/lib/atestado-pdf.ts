@@ -718,6 +718,14 @@ async function renderUpaSimples(pdf: PDFDocument, a: AtestadoData, validateUrl: 
   }
   page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: width - margin, y: y - 2 }, thickness: 0.5, color: ink });
 
+  if (a.observacao) {
+    y -= 22;
+    for (const ln of wrap(a.observacao, font, 10.5, width - margin * 2)) {
+      page.drawText(ln, { x: margin, y, size: 10.5, font, color: ink });
+      y -= 14;
+    }
+  }
+
   y -= 36;
   page.drawText("Sem mais, para o momento.", { x: margin, y, size, font, color: ink });
 
