@@ -582,11 +582,19 @@ async function renderUpaSP(pdf: PDFDocument, a: AtestadoData, validateUrl: strin
     page.drawText(`CID: ${a.cid}`, { x: margin, y, size: 11.5, font, color: ink });
   }
 
+  if (a.observacao) {
+    y -= 18;
+    for (const ln of wrap(a.observacao, font, 10.5, width - margin * 2)) {
+      page.drawText(ln, { x: margin, y, size: 10.5, font, color: ink });
+      y -= 14;
+    }
+  }
+
   y -= 28;
   page.drawText("Assinatura do paciente: ____________________________________", { x: margin, y, size: 11, font, color: ink });
 
-  // Right-aligned local + date
-  const cidadeStr = `${extractCity(a).toUpperCase()} - SP , ${formatDateBR(a.data_atendimento)}`;
+  // Right-aligned local + date — uses filled clinic city
+  const cidadeStr = `${extractCity(a)}, ${formatDateBR(a.data_atendimento)}`;
   const cW = font.widthOfTextAtSize(cidadeStr, 11.5);
   page.drawText(cidadeStr, { x: width - margin - cW, y: y - 50, size: 11.5, font, color: ink });
 
