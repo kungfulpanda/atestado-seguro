@@ -5,7 +5,7 @@ import unimedLogoUrl from "@/assets/templates/unimed-logo.jpg";
 import upaSusUrl from "@/assets/templates/upa-sus.jpg";
 import upa24Url from "@/assets/templates/upa-24h.jpg";
 
-export type AtestadoTemplate = "amorsaude" | "unimed" | "upa";
+export type AtestadoTemplate = "amorsaude" | "unimed" | "upa" | "upa-sp" | "upa-simples";
 
 export interface AtestadoData {
   id: string;
@@ -521,11 +521,215 @@ async function renderUPA(pdf: PDFDocument, a: AtestadoData, validateUrl: string)
   page.drawText(`ID: ${a.id}`, { x: margin, y: 30, size: 7, font: italic, color: muted });
 }
 
+// =========================================================
+// Template 4: UPA24h + SUS (São Paulo) — paragraph style
+// =========================================================
+async function renderUpaSP(pdf: PDFDocument, a: AtestadoData, validateUrl: string) {
+  const page = pdf.addPage([595, 842]);
+  const { width, height } = page.getSize();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const italic = await pdf.embedFont(StandardFonts.HelveticaOblique);
+  const ink = rgb(0.05, 0.05, 0.05);
+  const muted = rgb(0.45, 0.45, 0.45);
+  const margin = 50;
+
+  // Logos: UPA24h top-left, SUS top-right
+  try {
+    const upa = await embedJpg(pdf, upa24Url);
+    const upaW = 150;
+    const upaH = (upa.height / upa.width) * upaW;
+    page.drawImage(upa, { x: margin, y: height - margin - upaH, width: upaW, height: upaH });
+  } catch { /* */ }
+  try {
+    const sus = await embedJpg(pdf, upaSusUrl);
+    const susW = 90;
+    const susH = (sus.height / sus.width) * susW;
+    page.drawImage(sus, { x: width - margin - susW, y: height - margin - susH, width: susW, height: susH });
+  } catch { /* */ }
+
+  // Title centered
+  const titleY = height - margin - 90;
+  const title = "Atestado Médico";
+  const tW = bold.widthOfTextAtSize(title, 16);
+  page.drawText(title, { x: (width - tW) / 2, y: titleY, size: 16, font: bold, color: ink });
+
+  // Body paragraph (justified-feel — left aligned wrap)
+  let y = titleY - 70;
+  const horaIni = `${pad2(new Date().getHours())}h${pad2(new Date().getMinutes())}`;
+  const horaFim = `${pad2((new Date().getHours() + 2) % 24)}h${pad2(new Date().getMinutes())}`;
+  const body =
+    `Atesto para os devidos fins, que o(a) Sr.(a) ${a.nome_paciente.toUpperCase()} ` +
+    `compareceu ao pronto atendimento na data ${formatDateBR(a.data_atendimento)} das ${horaIni} até ${horaFim} ` +
+    `necessitando afastar-se de suas funções laborais diárias pelo período de ${pad2(a.dias)} (${diasPorExtenso(a.dias).toUpperCase()}) dia(s) por motivo de doença.`;
+  for (const ln of wrap(body, font, 11.5, width - margin * 2)) {
+    page.drawText(ln, { x: margin, y, size: 11.5, font, color: ink });
+    y -= 17;
+  }
+
+  if (a.cid) {
+    y -= 14;
+    page.drawText(`CID: ${a.cid}`, { x: margin, y, size: 11.5, font, color: ink });
+  }
+
+  y -= 28;
+  page.drawText("Assinatura do paciente: ____________________________________", { x: margin, y, size: 11, font, color: ink });
+
+  // Right-aligned local + date
+  const cidadeStr = `${extractCity(a).toUpperCase()} - SP , ${formatDateBR(a.data_atendimento)}`;
+  const cW = font.widthOfTextAtSize(cidadeStr, 11.5);
+  page.drawText(cidadeStr, { x: width - margin - cW, y: y - 50, size: 11.5, font, color: ink });
+
+  // Signature stamp bottom-right (cursive over name + crm)
+  const stampX = width - margin - 220;
+  const stampY = 200;
+  await drawSignature(pdf, page, stampX - 10, stampY + 20, 240, `Dr. ${a.medico_nome}`);
+  page.drawText(`Dr. ${a.medico_nome}`, { x: stampX, y: stampY, size: 10, font: bold, color: ink });
+  page.drawText((a.medico_especialidade ?? "médico clínico").toLowerCase(), { x: stampX, y: stampY - 12, size: 9.5, font, color: ink });
+  if (!a.omitir_crm) {
+    page.drawText(`CRM ${a.medico_crm}`, { x: stampX, y: stampY - 24, size: 9.5, font: bold, color: ink });
+  }
+
+  // "Emitido em" bottom-left
+  const now = new Date();
+  const emitido = `Emitido em: ${pad2(now.getDate())}/${pad2(now.getMonth() + 1)}/${now.getFullYear()}\n${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+  let ey = 200;
+  for (const ln of emitido.split("\n")) {
+    page.drawText(ln, { x: margin, y: ey, size: 8.5, font, color: muted });
+    ey -= 11;
+  }
+
+  // Nota box
+  const notaTxt = "NOTA: ESTE ATESTADO É VÁLIDO PARA FINALIDADES PREVISTAS NO ARTIGO 27 DE CLIPS, APROVADA PELO DECRETO Nº 89.312 DE 23/01/84, E SERÁ EXPEDIDO PARA JUSTIFICATIVA DE 1 A 15 DIAS DE AFASTAMENTO DO TRABALHO.";
+  const boxX = margin, boxY = 90, boxW = 320, boxH = 60;
+  page.drawRectangle({ x: boxX, y: boxY, width: boxW, height: boxH, borderColor: ink, borderWidth: 0.6, color: rgb(1,1,1) });
+  let ny = boxY + boxH - 12;
+  for (const ln of wrap(notaTxt, font, 7.5, boxW - 10)) {
+    page.drawText(ln, { x: boxX + 5, y: ny, size: 7.5, font, color: ink });
+    ny -= 9;
+  }
+
+  // QR small
+  await drawQR(pdf, page, validateUrl, width - margin - 60, 90, 55, muted);
+
+  // Address centered at bottom
+  if (a.clinica_endereco) {
+    const aw = font.widthOfTextAtSize(a.clinica_endereco, 10);
+    page.drawText(a.clinica_endereco, { x: (width - aw) / 2, y: 40, size: 10, font, color: ink });
+  }
+  page.drawText(`ID: ${a.id}`, { x: margin, y: 22, size: 7, font: italic, color: muted });
+}
+
+// =========================================================
+// Template 5: UPA Simples (text-only, formulário)
+// =========================================================
+async function renderUpaSimples(pdf: PDFDocument, a: AtestadoData, validateUrl: string) {
+  const page = pdf.addPage([595, 842]);
+  const { width, height } = page.getSize();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const italic = await pdf.embedFont(StandardFonts.HelveticaOblique);
+  const ink = rgb(0, 0, 0);
+  const muted = rgb(0.45, 0.45, 0.45);
+  const margin = 70;
+
+  // Header
+  let y = height - margin;
+  page.drawText("UNIDADE DE PRONTO ATENDIMENTO - UPA 24H", { x: margin, y, size: 13, font: bold, color: ink });
+  y -= 22;
+  page.drawText(`Endereço: ${a.clinica_endereco ?? ""}`, { x: margin, y, size: 11, font, color: ink });
+  page.drawLine({ start: { x: margin + 60, y: y - 2 }, end: { x: width - margin, y: y - 2 }, thickness: 0.5, color: ink });
+  y -= 18;
+  page.drawText(`Telefone: ( )      -      `, { x: margin, y, size: 11, font, color: ink });
+  page.drawLine({ start: { x: margin + 90, y: y - 2 }, end: { x: margin + 260, y: y - 2 }, thickness: 0.5, color: ink });
+
+  // Title
+  y -= 70;
+  const title = "ATESTADO MÉDICO";
+  const tW = bold.widthOfTextAtSize(title, 22);
+  page.drawText(title, { x: (width - tW) / 2, y, size: 22, font: bold, color: ink });
+
+  // Body — paragraph with inline filled blanks
+  y -= 70;
+  const lh = 20;
+  const size = 11.5;
+  const maxW = width - margin * 2;
+  // We render as a flowing paragraph with underlines under filled values.
+  // Simpler: write as continuous wrapped text with values inline + underlines drawn below.
+  type Tok = { text: string; underline?: boolean };
+  const tokens: Tok[] = [
+    { text: "Atesto, para os devidos fins, que o(a) paciente " },
+    { text: a.nome_paciente, underline: true },
+    { text: ", foi atendido(a) nesta unidade em " },
+    { text: formatDateBR(a.data_atendimento), underline: true },
+    { text: ", sendo necessário o seu afastamento das atividades laborais/escolares por um período de " },
+    { text: `${pad2(a.dias)} (${diasPorExtenso(a.dias)})`, underline: true },
+    { text: " dias, a contar da presente data." },
+  ];
+
+  let x = margin;
+  for (const t of tokens) {
+    const words = t.text.split(/(\s+)/);
+    for (const w of words) {
+      if (!w) continue;
+      const wW = font.widthOfTextAtSize(w, size);
+      if (x + wW > width - margin) {
+        x = margin;
+        y -= lh;
+      }
+      page.drawText(w, { x, y, size, font, color: ink });
+      if (t.underline && w.trim()) {
+        page.drawLine({ start: { x, y: y - 2 }, end: { x: x + wW, y: y - 2 }, thickness: 0.5, color: ink });
+      }
+      x += wW;
+    }
+  }
+  y -= lh + 20;
+  x = margin;
+
+  // CID line
+  page.drawText("CID:", { x: margin, y, size, font, color: ink });
+  if (a.cid) {
+    page.drawText(a.cid, { x: margin + 32, y, size, font, color: ink });
+  }
+  page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: width - margin, y: y - 2 }, thickness: 0.5, color: ink });
+
+  y -= 36;
+  page.drawText("Sem mais, para o momento.", { x: margin, y, size, font, color: ink });
+
+  y -= 60;
+  page.drawText(`Cidade: ${extractCity(a)}`, { x: margin, y, size, font, color: ink });
+  page.drawLine({ start: { x: margin + 50, y: y - 2 }, end: { x: margin + 250, y: y - 2 }, thickness: 0.5, color: ink });
+  page.drawText(`Data: ${formatDateBR(a.data_atendimento)}`, { x: margin + 290, y, size, font, color: ink });
+  page.drawLine({ start: { x: margin + 330, y: y - 2 }, end: { x: width - margin, y: y - 2 }, thickness: 0.5, color: ink });
+
+  // Signature block (lower)
+  y -= 110;
+  await drawSignature(pdf, page, margin + 10, y + 4, 220, a.medico_nome);
+  page.drawLine({ start: { x: margin, y }, end: { x: margin + 280, y }, thickness: 0.5, color: ink });
+  y -= 14;
+  page.drawText(`Nome do(a) Médico(a): ${a.medico_nome}`, { x: margin, y, size, font, color: ink });
+  y -= 18;
+  if (!a.omitir_crm) {
+    page.drawText(`CRM: ${a.medico_crm}`, { x: margin, y, size, font, color: ink });
+    page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: margin + 180, y: y - 2 }, thickness: 0.5, color: ink });
+  } else {
+    page.drawText("CRM: ", { x: margin, y, size, font, color: ink });
+    page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: margin + 180, y: y - 2 }, thickness: 0.5, color: ink });
+  }
+
+  // QR + id
+  await drawQR(pdf, page, validateUrl, width - margin - 70, 70, 60, muted);
+  page.drawText(`ID: ${a.id}`, { x: margin, y: 30, size: 7, font: italic, color: muted });
+}
+
 export async function generateAtestadoPdf(a: AtestadoData, validateUrl: string): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const tpl = a.template ?? "amorsaude";
   if (tpl === "unimed") await renderUnimed(pdf, a, validateUrl);
   else if (tpl === "upa") await renderUPA(pdf, a, validateUrl);
+  else if (tpl === "upa-sp") await renderUpaSP(pdf, a, validateUrl);
+  else if (tpl === "upa-simples") await renderUpaSimples(pdf, a, validateUrl);
   else await renderAmorSaude(pdf, a, validateUrl);
   return await pdf.save();
 }

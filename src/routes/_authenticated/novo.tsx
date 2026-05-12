@@ -159,6 +159,8 @@ function NovoAtestado() {
                 <SelectItem value="amorsaude">AmorSaúde (clínica privada)</SelectItem>
                 <SelectItem value="unimed">Unimed (convênio)</SelectItem>
                 <SelectItem value="upa">UPA / SUS (público)</SelectItem>
+                <SelectItem value="upa-sp">UPA 24h + SUS (São Paulo)</SelectItem>
+                <SelectItem value="upa-simples">UPA 24h — Simples</SelectItem>
               </SelectContent>
             </Select>
           </div>
