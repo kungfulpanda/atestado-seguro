@@ -744,10 +744,17 @@ async function renderUpaSimples(pdf: PDFDocument, a: AtestadoData, validateUrl: 
   y -= 18;
   if (!a.omitir_crm) {
     page.drawText(`CRM: ${a.medico_crm}`, { x: margin, y, size, font, color: ink });
-    page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: margin + 180, y: y - 2 }, thickness: 0.5, color: ink });
   } else {
     page.drawText("CRM: ", { x: margin, y, size, font, color: ink });
-    page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: margin + 180, y: y - 2 }, thickness: 0.5, color: ink });
+  }
+  page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: margin + 180, y: y - 2 }, thickness: 0.5, color: ink });
+  if (a.medico_especialidade) {
+    y -= 18;
+    page.drawText(`Especialidade: ${a.medico_especialidade}`, { x: margin, y, size, font, color: ink });
+  }
+  if (a.clinica_nome) {
+    y -= 18;
+    page.drawText(`Unidade: ${a.clinica_nome}`, { x: margin, y, size, font, color: ink });
   }
 
   // QR + id
