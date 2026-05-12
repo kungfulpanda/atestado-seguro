@@ -383,65 +383,95 @@ async function renderUPA(pdf: PDFDocument, a: AtestadoData, validateUrl: string)
   const title = "ATESTADO MÉDICO";
   const tW = bold.widthOfTextAtSize(title, 18);
   page.drawText(title, { x: (width - tW) / 2, y, size: 18, font: bold, color: ink });
-  y -= 50;
+  y -= 46;
 
-  // Helper: draw labelled blank line "label ____ value ____"
-  const lineFor = (label: string, value: string, yy: number, indent = 0) => {
-    page.drawText(label, { x: margin + indent, y: yy, size: 11, font, color: ink });
-    const lblW = font.widthOfTextAtSize(label, 11);
-    const lineX = margin + indent + lblW + 6;
-    const lineEnd = width - margin;
-    page.drawLine({ start: { x: lineX, y: yy - 2 }, end: { x: lineEnd, y: yy - 2 }, thickness: 0.5, color: ink });
-    const vW = font.widthOfTextAtSize(value, 11);
-    page.drawText(value, { x: lineX + ((lineEnd - lineX) - vW) / 2, y: yy + 2, size: 11, font, color: ink });
+  // Helper: filled blank with label below the line
+  // segments: list of { kind: "text"|"blank", value, label? }
+  type Seg = { kind: "text" | "blank"; value: string; label?: string; minW?: number };
+  const drawRow = (segs: Seg[], yy: number, size = 11) => {
+    let x = margin;
+    const right = width - margin;
+    // First pass: measure fixed text widths
+    let fixedW = 0;
+    let blankCount = 0;
+    let blankFixed = 0;
+    for (const s of segs) {
+      if (s.kind === "text") fixedW += font.widthOfTextAtSize(s.value, size) + 4;
+      else { blankCount++; blankFixed += s.minW ?? 0; }
+    }
+    const remaining = Math.max(0, right - margin - fixedW - blankFixed);
+    const flexBlanks = segs.filter(s => s.kind === "blank" && !s.minW).length;
+    const flexW = flexBlanks > 0 ? remaining / flexBlanks : 0;
+    for (const s of segs) {
+      if (s.kind === "text") {
+        page.drawText(s.value, { x, y: yy, size, font, color: ink });
+        x += font.widthOfTextAtSize(s.value, size) + 4;
+      } else {
+        const w = s.minW ?? flexW;
+        page.drawLine({ start: { x, y: yy - 3 }, end: { x: x + w, y: yy - 3 }, thickness: 0.6, color: ink });
+        const vW = font.widthOfTextAtSize(s.value, size);
+        page.drawText(s.value, { x: x + Math.max(2, (w - vW) / 2), y: yy + 1, size, font, color: ink });
+        if (s.label) {
+          const lW = font.widthOfTextAtSize(s.label, 7.5);
+          page.drawText(s.label, { x: x + Math.max(0, (w - lW) / 2), y: yy - 14, size: 7.5, font, color: muted });
+        }
+        x += w;
+      }
+    }
   };
 
-  lineFor("ATESTO PARA OS DEVIDOS FINS, A PEDIDO, QUE O(A) SR.(A)", a.nome_paciente, y);
+  // Row 1: ATESTO PARA OS DEVIDOS FINS, A PEDIDO, QUE O(A) SR.(A) ____
+  drawRow([
+    { kind: "text", value: "ATESTO PARA OS DEVIDOS FINS, A PEDIDO, QUE O(A) SR.(A)" },
+    { kind: "blank", value: a.nome_paciente, label: "NOME DO PACIENTE" },
+  ], y);
   y -= 30;
-  // ID/RG (use placeholder since we don't track it)
-  page.drawLine({ start: { x: margin, y: y - 2 }, end: { x: width - margin, y: y - 2 }, thickness: 0.5, color: ink });
-  const idLabel = "IDENTI. OU REGISTRO";
-  const ilW = font.widthOfTextAtSize(idLabel, 8);
-  page.drawText(idLabel, { x: (width - ilW) / 2, y: y - 14, size: 8, font, color: muted });
-  y -= 36;
 
-  lineFor("FOI ATENDIDO(A)", a.medico_especialidade ?? "Médico - Clínico Geral", y);
-  page.drawText("CLÍNICA OU SERVIÇO", { x: width / 2 - 50, y: y - 14, size: 8, font, color: muted });
-  y -= 32;
+  // Row 2: full blank for ID/RG (we don't store it)
+  drawRow([
+    { kind: "blank", value: "", label: "IDENTIDADE OU REGISTRO" },
+  ], y);
+  y -= 30;
 
-  lineFor("DO", a.clinica_nome ?? "—", y);
-  page.drawText("HOSPITAL - AMBULATÓRIO", { x: width / 2 - 60, y: y - 14, size: 8, font, color: muted });
-  y -= 36;
+  // Row 3: FOI ATENDIDO(A) NA ____ DO ____
+  drawRow([
+    { kind: "text", value: "FOI ATENDIDO(A) NA" },
+    { kind: "blank", value: a.medico_especialidade ?? "CLÍNICA MÉDICA", label: "CLÍNICA OU SERVIÇO" },
+  ], y);
+  y -= 30;
+  drawRow([
+    { kind: "text", value: "DO" },
+    { kind: "blank", value: a.clinica_nome ?? "—", label: "HOSPITAL / AMBULATÓRIO" },
+  ], y);
+  y -= 30;
 
-  // No dia ____ às __:__ horas, necessitando de __ ( ____ )
-  page.drawText("NO DIA", { x: margin, y, size: 11, font, color: ink });
-  const dataStr = formatDateBR(a.data_atendimento);
-  page.drawText(dataStr, { x: margin + 50, y, size: 11, font, color: ink });
-  page.drawLine({ start: { x: margin + 45, y: y - 2 }, end: { x: margin + 130, y: y - 2 }, thickness: 0.5, color: ink });
-  page.drawText(", ÀS", { x: margin + 135, y, size: 11, font, color: ink });
+  // Row 4: NO DIA ____ ÀS ____ HORAS, NECESSITANDO DE ____ (____) DIAS DE REPOUSO
   const horaStr = `${pad2(new Date().getHours())}:${pad2(new Date().getMinutes())}`;
-  page.drawText(horaStr, { x: margin + 175, y, size: 11, font, color: ink });
-  page.drawLine({ start: { x: margin + 170, y: y - 2 }, end: { x: margin + 230, y: y - 2 }, thickness: 0.5, color: ink });
-  page.drawText("HORAS, NECESSITANDO DE", { x: margin + 235, y, size: 11, font, color: ink });
-  const dn = pad2(a.dias);
-  page.drawText(dn, { x: margin + 388, y, size: 11, font, color: ink });
-  page.drawLine({ start: { x: margin + 383, y: y - 2 }, end: { x: margin + 410, y: y - 2 }, thickness: 0.5, color: ink });
-  page.drawText("(", { x: margin + 412, y, size: 11, font, color: ink });
-  const ext = diasPorExtenso(a.dias).toUpperCase();
-  page.drawText(ext, { x: margin + 420, y, size: 11, font, color: ink });
-  page.drawLine({ start: { x: margin + 418, y: y - 2 }, end: { x: width - margin - 12, y: y - 2 }, thickness: 0.5, color: ink });
-  page.drawText(")", { x: width - margin - 10, y, size: 11, font, color: ink });
-  page.drawText("POR EXTENSO", { x: width - margin - 80, y: y - 14, size: 8, font, color: muted });
-  y -= 36;
-
-  page.drawText("DIAS DE REPOUSO POR MOTIVO DE DOENÇA.", { x: margin, y, size: 11, font, color: ink });
+  drawRow([
+    { kind: "text", value: "NO DIA" },
+    { kind: "blank", value: formatDateBR(a.data_atendimento), label: "DATA", minW: 90 },
+    { kind: "text", value: ", ÀS" },
+    { kind: "blank", value: horaStr, label: "HORA", minW: 55 },
+    { kind: "text", value: "HORAS," },
+  ], y);
   y -= 30;
+  drawRow([
+    { kind: "text", value: "NECESSITANDO DE" },
+    { kind: "blank", value: pad2(a.dias), label: "DIAS", minW: 40 },
+    { kind: "text", value: "(" },
+    { kind: "blank", value: diasPorExtenso(a.dias).toUpperCase(), label: "POR EXTENSO" },
+    { kind: "text", value: ")" },
+  ], y);
+  y -= 24;
+  page.drawText("DIAS DE REPOUSO POR MOTIVO DE DOENÇA.", { x: margin, y, size: 11, font, color: ink });
+  y -= 28;
 
   if (a.cid) {
-    page.drawText("CID", { x: margin, y, size: 11, font, color: ink });
-    page.drawText(a.cid, { x: margin + 40, y, size: 11, font, color: ink });
-    page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: margin + 200, y: y - 2 }, thickness: 0.5, color: ink });
-    y -= 24;
+    drawRow([
+      { kind: "text", value: "CID:" },
+      { kind: "blank", value: a.cid, label: "CÓDIGO CID-10", minW: 160 },
+    ], y);
+    y -= 30;
   }
 
   if (a.observacao) {
