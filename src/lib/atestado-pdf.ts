@@ -187,6 +187,11 @@ async function renderAmorSaude(pdf: PDFDocument, a: AtestadoData, validateUrl: s
   const cidadeStr = `${extractCity(a)}, ${formatDateBR(a.data_atendimento)}`;
   page.drawText(cidadeStr, { x: rightX, y: 320, size: 12, font: bold, color: ink });
 
+  // Especialidade (small, under city)
+  if (a.medico_especialidade) {
+    page.drawText(`Especialidade: ${a.medico_especialidade}`, { x: rightX, y: 304, size: 10, font, color: muted });
+  }
+
   // Signature
   const sigW = 280;
   const sigX = margin + 30;
@@ -331,9 +336,14 @@ async function renderUnimed(pdf: PDFDocument, a: AtestadoData, validateUrl: stri
     const cw = font.widthOfTextAtSize(crm, 9.5);
     page.drawText(crm, { x: sigX + (sigW - cw) / 2, y: sigY - 26, size: 9.5, font, color: muted });
   }
+  if (a.medico_especialidade) {
+    const esp = a.medico_especialidade;
+    const ew = font.widthOfTextAtSize(esp, 9.5);
+    page.drawText(esp, { x: sigX + (sigW - ew) / 2, y: sigY - 38, size: 9.5, font: italic, color: muted });
+  }
   const carimbo = "Assinatura e Carimbo";
   const cw2 = font.widthOfTextAtSize(carimbo, 10);
-  page.drawText(carimbo, { x: sigX + (sigW - cw2) / 2, y: sigY - 42, size: 10, font: italic, color: muted });
+  page.drawText(carimbo, { x: sigX + (sigW - cw2) / 2, y: sigY - 54, size: 10, font: italic, color: muted });
 
   // QR + footer block
   await drawQR(pdf, page, validateUrl, width - margin - 80, 90, 70, muted);
@@ -572,11 +582,19 @@ async function renderUpaSP(pdf: PDFDocument, a: AtestadoData, validateUrl: strin
     page.drawText(`CID: ${a.cid}`, { x: margin, y, size: 11.5, font, color: ink });
   }
 
+  if (a.observacao) {
+    y -= 18;
+    for (const ln of wrap(a.observacao, font, 10.5, width - margin * 2)) {
+      page.drawText(ln, { x: margin, y, size: 10.5, font, color: ink });
+      y -= 14;
+    }
+  }
+
   y -= 28;
   page.drawText("Assinatura do paciente: ____________________________________", { x: margin, y, size: 11, font, color: ink });
 
-  // Right-aligned local + date
-  const cidadeStr = `${extractCity(a).toUpperCase()} - SP , ${formatDateBR(a.data_atendimento)}`;
+  // Right-aligned local + date — uses filled clinic city
+  const cidadeStr = `${extractCity(a)}, ${formatDateBR(a.data_atendimento)}`;
   const cW = font.widthOfTextAtSize(cidadeStr, 11.5);
   page.drawText(cidadeStr, { x: width - margin - cW, y: y - 50, size: 11.5, font, color: ink });
 
@@ -612,10 +630,16 @@ async function renderUpaSP(pdf: PDFDocument, a: AtestadoData, validateUrl: strin
   // QR small
   await drawQR(pdf, page, validateUrl, width - margin - 60, 90, 55, muted);
 
-  // Address centered at bottom
+  // Clinic name + address centered at bottom
+  let footY = 52;
   if (a.clinica_endereco) {
     const aw = font.widthOfTextAtSize(a.clinica_endereco, 10);
-    page.drawText(a.clinica_endereco, { x: (width - aw) / 2, y: 40, size: 10, font, color: ink });
+    page.drawText(a.clinica_endereco, { x: (width - aw) / 2, y: footY, size: 10, font, color: ink });
+    footY += 12;
+  }
+  if (a.clinica_nome) {
+    const nw = bold.widthOfTextAtSize(a.clinica_nome, 10);
+    page.drawText(a.clinica_nome, { x: (width - nw) / 2, y: footY, size: 10, font: bold, color: ink });
   }
   page.drawText(`ID: ${a.id}`, { x: margin, y: 22, size: 7, font: italic, color: muted });
 }
@@ -694,6 +718,14 @@ async function renderUpaSimples(pdf: PDFDocument, a: AtestadoData, validateUrl: 
   }
   page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: width - margin, y: y - 2 }, thickness: 0.5, color: ink });
 
+  if (a.observacao) {
+    y -= 22;
+    for (const ln of wrap(a.observacao, font, 10.5, width - margin * 2)) {
+      page.drawText(ln, { x: margin, y, size: 10.5, font, color: ink });
+      y -= 14;
+    }
+  }
+
   y -= 36;
   page.drawText("Sem mais, para o momento.", { x: margin, y, size, font, color: ink });
 
@@ -712,10 +744,17 @@ async function renderUpaSimples(pdf: PDFDocument, a: AtestadoData, validateUrl: 
   y -= 18;
   if (!a.omitir_crm) {
     page.drawText(`CRM: ${a.medico_crm}`, { x: margin, y, size, font, color: ink });
-    page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: margin + 180, y: y - 2 }, thickness: 0.5, color: ink });
   } else {
     page.drawText("CRM: ", { x: margin, y, size, font, color: ink });
-    page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: margin + 180, y: y - 2 }, thickness: 0.5, color: ink });
+  }
+  page.drawLine({ start: { x: margin + 30, y: y - 2 }, end: { x: margin + 180, y: y - 2 }, thickness: 0.5, color: ink });
+  if (a.medico_especialidade) {
+    y -= 18;
+    page.drawText(`Especialidade: ${a.medico_especialidade}`, { x: margin, y, size, font, color: ink });
+  }
+  if (a.clinica_nome) {
+    y -= 18;
+    page.drawText(`Unidade: ${a.clinica_nome}`, { x: margin, y, size, font, color: ink });
   }
 
   // QR + id
