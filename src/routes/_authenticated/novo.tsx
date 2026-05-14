@@ -30,6 +30,45 @@ function NovoAtestado() {
   const [cid, setCid] = useState("");
   const [omitirCrm, setOmitirCrm] = useState(false);
   const [template, setTemplate] = useState<AtestadoTemplate>("amorsaude");
+  const [upaLocal, setUpaLocal] = useState("");
+  const [upaBusy, setUpaBusy] = useState(false);
+  const [upaNome, setUpaNome] = useState<string | null>(null);
+  const [upaEndereco, setUpaEndereco] = useState<string | null>(null);
+  const [upaCidade, setUpaCidade] = useState<string | null>(null);
+
+  const isUpa = template === "upa" || template === "upa-sp" || template === "upa-simples";
+
+  async function buscarUpa() {
+    if (!upaLocal.trim()) return toast.error("Informe a cidade/UF");
+    setUpaBusy(true);
+    try {
+      const res = await fetch("/api/upa-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ localizacao: upaLocal }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro na busca");
+      setUpaNome(data.nome ?? null);
+      setUpaEndereco(data.endereco ?? null);
+      setUpaCidade(data.cidade ?? upaLocal);
+      toast.success(`UPA encontrada: ${data.nome ?? "—"}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUpaBusy(false);
+    }
+  }
+
+  function clinicaNomeFinal() {
+    return isUpa ? (upaNome ?? profile?.clinica_nome ?? null) : (profile?.clinica_nome ?? null);
+  }
+  function clinicaEnderecoFinal() {
+    return isUpa ? (upaEndereco ?? profile?.clinica_endereco ?? null) : (profile?.clinica_endereco ?? null);
+  }
+  function cidadeFinal() {
+    return isUpa ? (upaCidade ?? null) : null;
+  }
 
   async function preview() {
     if (!profile) return toast.error("Perfil não carregado");
@@ -45,8 +84,9 @@ function NovoAtestado() {
       medico_nome: profile.nome,
       medico_crm: profile.crm,
       medico_especialidade: profile.especialidade ?? null,
-      clinica_nome: profile.clinica_nome ?? null,
-      clinica_endereco: profile.clinica_endereco ?? null,
+      clinica_nome: clinicaNomeFinal(),
+      clinica_endereco: clinicaEnderecoFinal(),
+      cidade: cidadeFinal(),
       omitir_crm: omitirCrm,
       template,
     }, `${window.location.origin}/validar/${fakeId}`);
