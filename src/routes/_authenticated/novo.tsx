@@ -36,7 +36,7 @@ function NovoAtestado() {
   const [upaEndereco, setUpaEndereco] = useState<string | null>(null);
   const [upaCidade, setUpaCidade] = useState<string | null>(null);
 
-  const isUpa = template === "upa" || template === "upa-sp" || template === "upa-simples";
+  const isUpa = template === "upa";
 
   async function buscarUpa() {
     if (!upaLocal.trim()) return toast.error("Informe a cidade/UF");
@@ -198,10 +198,10 @@ function NovoAtestado() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="amorsaude">AmorSaúde (clínica privada)</SelectItem>
-                <SelectItem value="unimed">Unimed (convênio)</SelectItem>
-                <SelectItem value="upa">UPA / SUS (público)</SelectItem>
-                <SelectItem value="upa-sp">UPA 24h + SUS (São Paulo)</SelectItem>
-                <SelectItem value="upa-simples">UPA 24h — Simples</SelectItem>
+                <SelectItem value="upa">UPA 24h / SUS (público)</SelectItem>
+                <SelectItem value="moderno">Moderno — minimal azul</SelectItem>
+                <SelectItem value="executivo">Executivo — premium navy &amp; gold</SelectItem>
+                <SelectItem value="holistico">Holístico — wellness orgânico</SelectItem>
               </SelectContent>
           </Select>
           </div>
