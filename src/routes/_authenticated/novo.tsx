@@ -156,8 +156,9 @@ function NovoAtestado() {
             const bytes = await generateAtestadoPdf({
               ...data,
               medico_especialidade: profile.especialidade ?? null,
-              clinica_nome: profile.clinica_nome ?? null,
-              clinica_endereco: profile.clinica_endereco ?? null,
+              clinica_nome: clinicaNomeFinal(),
+              clinica_endereco: clinicaEnderecoFinal(),
+              cidade: cidadeFinal(),
               omitir_crm: omitirCrm,
               template,
             }, url);
