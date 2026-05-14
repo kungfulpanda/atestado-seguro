@@ -30,6 +30,45 @@ function NovoAtestado() {
   const [cid, setCid] = useState("");
   const [omitirCrm, setOmitirCrm] = useState(false);
   const [template, setTemplate] = useState<AtestadoTemplate>("amorsaude");
+  const [upaLocal, setUpaLocal] = useState("");
+  const [upaBusy, setUpaBusy] = useState(false);
+  const [upaNome, setUpaNome] = useState<string | null>(null);
+  const [upaEndereco, setUpaEndereco] = useState<string | null>(null);
+  const [upaCidade, setUpaCidade] = useState<string | null>(null);
+
+  const isUpa = template === "upa" || template === "upa-sp" || template === "upa-simples";
+
+  async function buscarUpa() {
+    if (!upaLocal.trim()) return toast.error("Informe a cidade/UF");
+    setUpaBusy(true);
+    try {
+      const res = await fetch("/api/upa-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ localizacao: upaLocal }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro na busca");
+      setUpaNome(data.nome ?? null);
+      setUpaEndereco(data.endereco ?? null);
+      setUpaCidade(data.cidade ?? upaLocal);
+      toast.success(`UPA encontrada: ${data.nome ?? "—"}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUpaBusy(false);
+    }
+  }
+
+  function clinicaNomeFinal() {
+    return isUpa ? (upaNome ?? profile?.clinica_nome ?? null) : (profile?.clinica_nome ?? null);
+  }
+  function clinicaEnderecoFinal() {
+    return isUpa ? (upaEndereco ?? profile?.clinica_endereco ?? null) : (profile?.clinica_endereco ?? null);
+  }
+  function cidadeFinal() {
+    return isUpa ? (upaCidade ?? null) : null;
+  }
 
   async function preview() {
     if (!profile) return toast.error("Perfil não carregado");
@@ -45,8 +84,9 @@ function NovoAtestado() {
       medico_nome: profile.nome,
       medico_crm: profile.crm,
       medico_especialidade: profile.especialidade ?? null,
-      clinica_nome: profile.clinica_nome ?? null,
-      clinica_endereco: profile.clinica_endereco ?? null,
+      clinica_nome: clinicaNomeFinal(),
+      clinica_endereco: clinicaEnderecoFinal(),
+      cidade: cidadeFinal(),
       omitir_crm: omitirCrm,
       template,
     }, `${window.location.origin}/validar/${fakeId}`);
@@ -116,8 +156,9 @@ function NovoAtestado() {
             const bytes = await generateAtestadoPdf({
               ...data,
               medico_especialidade: profile.especialidade ?? null,
-              clinica_nome: profile.clinica_nome ?? null,
-              clinica_endereco: profile.clinica_endereco ?? null,
+              clinica_nome: clinicaNomeFinal(),
+              clinica_endereco: clinicaEnderecoFinal(),
+              cidade: cidadeFinal(),
               omitir_crm: omitirCrm,
               template,
             }, url);
@@ -162,8 +203,39 @@ function NovoAtestado() {
                 <SelectItem value="upa-sp">UPA 24h + SUS (São Paulo)</SelectItem>
                 <SelectItem value="upa-simples">UPA 24h — Simples</SelectItem>
               </SelectContent>
-            </Select>
+          </Select>
           </div>
+
+          {isUpa && (
+            <div className="space-y-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+              <Label className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Buscar UPA 24h pela localização
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Informe a cidade/UF (ex: <em>Campinas - SP</em>) para preencher automaticamente o nome e o endereço da UPA no atestado.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Cidade - UF"
+                  value={upaLocal}
+                  onChange={(e) => setUpaLocal(e.target.value)}
+                  disabled={upaBusy}
+                />
+                <Button type="button" onClick={buscarUpa} disabled={upaBusy}>
+                  {upaBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  <span className="ml-1">Buscar</span>
+                </Button>
+              </div>
+              {upaNome && (
+                <div className="text-xs rounded bg-background/60 border p-2 space-y-0.5">
+                  <div><strong>{upaNome}</strong></div>
+                  {upaEndereco && <div className="text-muted-foreground">{upaEndereco}</div>}
+                  {upaCidade && <div className="text-muted-foreground">Cidade: {upaCidade}</div>}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>

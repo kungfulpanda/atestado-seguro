@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ValidarIdRouteImport } from './routes/validar.$id'
+import { Route as ApiUpaSearchRouteImport } from './routes/api/upa-search'
 import { Route as ApiDescribeRouteImport } from './routes/api/describe'
 import { Route as ApiClinicaRouteImport } from './routes/api/clinica'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
@@ -36,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
 const ValidarIdRoute = ValidarIdRouteImport.update({
   id: '/validar/$id',
   path: '/validar/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUpaSearchRoute = ApiUpaSearchRouteImport.update({
+  id: '/api/upa-search',
+  path: '/api/upa-search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiDescribeRoute = ApiDescribeRouteImport.update({
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof AuthenticatedPerfilRoute
   '/api/clinica': typeof ApiClinicaRoute
   '/api/describe': typeof ApiDescribeRoute
+  '/api/upa-search': typeof ApiUpaSearchRoute
   '/validar/$id': typeof ValidarIdRoute
 }
 export interface FileRoutesByTo {
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof AuthenticatedPerfilRoute
   '/api/clinica': typeof ApiClinicaRoute
   '/api/describe': typeof ApiDescribeRoute
+  '/api/upa-search': typeof ApiUpaSearchRoute
   '/validar/$id': typeof ValidarIdRoute
 }
 export interface FileRoutesById {
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/api/clinica': typeof ApiClinicaRoute
   '/api/describe': typeof ApiDescribeRoute
+  '/api/upa-search': typeof ApiUpaSearchRoute
   '/validar/$id': typeof ValidarIdRoute
 }
 export interface FileRouteTypes {
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/api/clinica'
     | '/api/describe'
+    | '/api/upa-search'
     | '/validar/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/api/clinica'
     | '/api/describe'
+    | '/api/upa-search'
     | '/validar/$id'
   id:
     | '__root__'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/_authenticated/perfil'
     | '/api/clinica'
     | '/api/describe'
+    | '/api/upa-search'
     | '/validar/$id'
   fileRoutesById: FileRoutesById
 }
@@ -136,6 +148,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ApiClinicaRoute: typeof ApiClinicaRoute
   ApiDescribeRoute: typeof ApiDescribeRoute
+  ApiUpaSearchRoute: typeof ApiUpaSearchRoute
   ValidarIdRoute: typeof ValidarIdRoute
 }
 
@@ -167,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/validar/$id'
       fullPath: '/validar/$id'
       preLoaderRoute: typeof ValidarIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upa-search': {
+      id: '/api/upa-search'
+      path: '/api/upa-search'
+      fullPath: '/api/upa-search'
+      preLoaderRoute: typeof ApiUpaSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/describe': {
@@ -229,6 +249,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ApiClinicaRoute: ApiClinicaRoute,
   ApiDescribeRoute: ApiDescribeRoute,
+  ApiUpaSearchRoute: ApiUpaSearchRoute,
   ValidarIdRoute: ValidarIdRoute,
 }
 export const routeTree = rootRouteImport
