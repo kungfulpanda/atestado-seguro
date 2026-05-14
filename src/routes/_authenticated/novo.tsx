@@ -203,8 +203,39 @@ function NovoAtestado() {
                 <SelectItem value="upa-sp">UPA 24h + SUS (São Paulo)</SelectItem>
                 <SelectItem value="upa-simples">UPA 24h — Simples</SelectItem>
               </SelectContent>
-            </Select>
+          </Select>
           </div>
+
+          {isUpa && (
+            <div className="space-y-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+              <Label className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Buscar UPA 24h pela localização
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Informe a cidade/UF (ex: <em>Campinas - SP</em>) para preencher automaticamente o nome e o endereço da UPA no atestado.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Cidade - UF"
+                  value={upaLocal}
+                  onChange={(e) => setUpaLocal(e.target.value)}
+                  disabled={upaBusy}
+                />
+                <Button type="button" onClick={buscarUpa} disabled={upaBusy}>
+                  {upaBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  <span className="ml-1">Buscar</span>
+                </Button>
+              </div>
+              {upaNome && (
+                <div className="text-xs rounded bg-background/60 border p-2 space-y-0.5">
+                  <div><strong>{upaNome}</strong></div>
+                  {upaEndereco && <div className="text-muted-foreground">{upaEndereco}</div>}
+                  {upaCidade && <div className="text-muted-foreground">Cidade: {upaCidade}</div>}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
